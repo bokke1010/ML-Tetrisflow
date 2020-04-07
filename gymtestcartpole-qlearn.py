@@ -15,7 +15,7 @@ oldState = state
 model = QLean.Model(discountFactor = 0.2, learningRate = 0.06, actionList = [0, 1], randomize = 0.02)
 model.data = fileState.load_state("qd.json")
 counter = 0
-while counter < 160:
+while counter < 180:
     env.render()
     oldState = state
     action = model.bestAction(state)
