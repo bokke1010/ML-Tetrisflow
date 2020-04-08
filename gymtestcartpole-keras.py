@@ -1,42 +1,37 @@
 import gym, fileState
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+import numpy as np
+from keras.layers import Dense, Flatten
+from keras.models import Sequential
+from keras.optimizers import Adam
+from rl.agents import SARSAAgent
+from rl.policy import EpsGreedyQPolicy
 
-# Try: CartPole-v0 MountainCar-v0
-# Starting with Q-learning or something
-env = gym.make('CartPole-v0')
+env = gym.make('CartPole-v1')
 env.reset()
-# print(env.observation_space.high)
-# print(env.observation_space.low)
-# print(env.action_space.high)
-# Action space is discrete. 0 or 1
 
-dataset = {}
-model = keras.Sequential()
-# Add layers here
+# Make a neural net with 3 hidden layers
+def agent(states, actions):
+    model = Sequential()
+    model.add(Flatten(input_shape = (1, states)))
+    model.add(Dense(24, activation='relu'))
+    model.add(Dense(24, activation='relu'))
+    model.add(Dense(24, activation='relu'))
+    model.add(Dense(actions, activation='linear'))
+    return model
+# Actually make a neural net with 3 hidden layers
+model = agent(env.observation_space.shape[0], env.action_space.n)
 
+policy = EpsGreedyQPolicy()
+# Create a tensorflow reinforcement learning agent using the [state > action > reward] system
+sarsa = SARSAAgent(model = model, policy = policy, nb_actions = env.action_space.n)
+# Choose how we calculate reward and modify the model
+sarsa.compile('adam', metrics = ['mse'])
 
-state, reward, done, debug = (0,0,0,0), 0.0, False, {}
-# oldState = state
+# sarsa.fit(env, nb_steps = 50000, visualize = False, verbose = 1)
+sarsa.load_weights('cartpolekerassarsa.h5f')
 
-counter = 0
-while counter < 180:
-    env.render()
-    # oldState = state
-    # action = model.bestAction(state)
+scores = sarsa.test(env, nb_episodes=10, visualize=False)
+print('Average score over 10 test games: {}'.format(np.mean(scores.history['episode_reward'])))
 
-# Choose action
-
-# Execute action, either 1 or 0
-    # (state, reward, done, debug) = env.step(action)
-
-# Add data to datasetate[2]*15.5), int(state[3]*0.6))
-# Refit model
-
-    # if done:
-    #     env.reset()
-    #     counter = 1
-    counter += 1
-fileState.save_state(dataset, "kerascartpoleData.json")
-env.close()
+sarsa.save_weights('cartpolekerassarsa.h5f', overwrite=True)
+sarsa.test(env, nb_episodes=2, visualize=True)
